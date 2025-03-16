@@ -1,0 +1,19 @@
+package user
+
+import (
+	"github.com/NhutNam2904/carzone/store"
+)
+
+type UserService struct {
+	store store.UserStoreInterface
+}
+
+func NewUservice(store store.UserStoreInterface) *UserService {
+	return &UserService{store: store}
+}
+
+///func (u *UserService) SignUp(ctx context.Context, userReq *models.User) (models.User, error) {
+///user, err := u.SignUp(ctx, userReq)
+//return user, nil
+
+//}

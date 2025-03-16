@@ -1,0 +1,67 @@
+package handler
+
+import (
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
+
+	"github.com/NhutNam2904/carzone/models"
+	"github.com/NhutNam2904/carzone/service"
+)
+
+type UserHanlder struct {
+	service service.UserServiceInteface
+}
+
+func NewUserHandler(service service.UserServiceInteface) *UserHanlder {
+	return &UserHanlder{service: service}
+}
+
+func HashPassword()
+
+func VerifyPassword()
+
+func (u *UserHanlder) SignUp(ctx, user *models.User) (models.User, error) {
+
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		log.Println("Error: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	var userReq models.User
+
+	err = json.Unmarshal(body, &userReq)
+
+	if err != nil {
+		log.Println("Error while Unmarshalling Request body  ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	user_created, err := u.service.SignUp(ctx, &userReq)
+
+	if err != nil {
+		log.Println("Error Creating User: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+
+	}
+
+	responseBody, err := json.Marshal(user_created)
+
+	if err != nil {
+		log.Println("Error while marshalling: ", err)
+
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+
+	_, _ = w.Write(responseBody)
+
+}

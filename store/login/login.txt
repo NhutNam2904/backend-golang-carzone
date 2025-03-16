@@ -1,0 +1,40 @@
+package login
+
+import (
+	"context"
+	"database/sql"
+
+	"github.com/NhutNam2904/carzone/models"
+	"github.com/go-redis/redis/v8"
+)
+
+type Store struct {
+	db          *sql.DB
+	redisClient *redis.Client
+}
+
+func New(db *sql.DB, redisClient *redis.Client) *Store {
+	return &Store{db: db,
+		redisClient: redisClient}
+}
+
+func (s Store) GetUsernamePassword(ctx context.Context, username string) (models.Credentials, error) {
+
+	var UsernamePassword models.Credentials
+
+	query := `SELECT username, password FROM users WHERE username =$1`
+
+	row := s.db.QueryRowContext(ctx, query, username)
+
+	err := row.Scan(&UsernamePassword.UserName,
+		&UsernamePassword.Password)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return UsernamePassword, nil
+		}
+		return UsernamePassword, err
+	}
+	return UsernamePassword, nil
+
+}

@@ -1,0 +1,24 @@
+package login
+
+import (
+	"context"
+
+	"github.com/NhutNam2904/carzone/models"
+	"github.com/NhutNam2904/carzone/store"
+)
+
+type LoginService struct {
+	store store.LoginStore
+}
+
+func NewLoginService(store store.LoginStore) *LoginService {
+	return &LoginService{
+		store: store,
+	}
+}
+
+func (s LoginService) GetUsernamePassword(ctx context.Context, username string) (models.Credentials, error) {
+
+	usernamepassword, err := s.store.GetUsernamePassword(ctx, username)
+	return usernamepassword, err
+}

@@ -1,0 +1,99 @@
+package login
+
+import (
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"time"
+
+	"github.com/NhutNam2904/carzone/models"
+	"github.com/NhutNam2904/carzone/service"
+	"github.com/dgrijalva/jwt-go"
+)
+
+type LoginHandler struct {
+	service service.LoginService
+}
+
+func NewLoginHandler(service service.LoginService) *LoginHandler {
+	return &LoginHandler{service: service}
+}
+
+func (h *LoginHandler) LoginHandlerUsernamePassowrd(w http.ResponseWriter, r *http.Request) {
+
+	ctx := r.Context()
+	var credentialrequest models.Credentials
+
+	body, err := io.ReadAll(r.Body)
+
+	defer r.Body.Close()
+
+	if err != nil {
+		log.Println("Error: ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = json.Unmarshal(body, &credentialrequest)
+
+	log.Println("Request: ", credentialrequest)
+
+	if err != nil {
+		log.Println("Error while Unmarshalling Request body  ", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	getusernamepassword, err := h.service.GetUsernamePassword(ctx, credentialrequest.UserName)
+
+	log.Println("Getusernamepasswod: ", getusernamepassword)
+
+	if err != nil {
+		http.Error(w, "Failed to get username password from database", http.StatusInternalServerError)
+		log.Println("Error when run service GetUsernamePassword: ", err)
+	}
+
+	valid := (credentialrequest.UserName == getusernamepassword.UserName && credentialrequest.Password == getusernamepassword.Password)
+
+	if !valid {
+		http.Error(w, "Invalid Username or Password", http.StatusUnauthorized)
+		log.Println("Error check username and password: ")
+		return
+
+	}
+
+	tokenString, err := GenerateToken(credentialrequest.UserName)
+
+	if err != nil {
+		http.Error(w, "Failed to generateToken JWT", http.StatusInternalServerError)
+		log.Println("Error Generating Token: ", err)
+		return
+	}
+
+	response := map[string]string{"token": tokenString}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
+
+	fmt.Println("Successfully Login to Applications")
+}
+
+func GenerateToken(userName string) (string, error) {
+	expiration := time.Now().Add(24 * time.Hour)
+
+	claims := &jwt.StandardClaims{
+		ExpiresAt: expiration.Unix(),
+		IssuedAt:  time.Now().Unix(),
+		Subject:   userName,
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedToken, err := token.SignedString([]byte("some_value"))
+
+	if err != nil {
+		return "", err
+	}
+	return signedToken, nil
+}
